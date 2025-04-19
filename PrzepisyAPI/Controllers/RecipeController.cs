@@ -14,13 +14,30 @@ namespace PrzepisyAPI.Controllers
         private readonly RecipeDbContext _context;
         public RecipeController(RecipeDbContext context) => _context = context;
 
-        [HttpGet] public async Task<IEnumerable<Recipe>> Get() => await _context.Recipes.ToListAsync();
+        [HttpGet]
+        public async Task<IEnumerable<Recipe>> GetRecipes()
+        {
+            return await _context.Recipes
+                .Include(r => r.User)
+                .Include(r => r.RecipeCategories)
+                    .ThenInclude(rc => rc.Category)
+                .Include(r => r.RecipeIngredients)
+                    .ThenInclude(ri => ri.Ingredient)
+                .Include(r => r.Ratings)
+                .ToListAsync();
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Recipe>> Get(int id)
         {
-            var item = await _context.Recipes.FindAsync(id);
-            return item == null ? NotFound() : Ok(item);
+            var recipe = await _context.Recipes
+                .Include(r => r.User)
+                .Include(r => r.RecipeCategories).ThenInclude(rc => rc.Category)
+                .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Ingredient)
+                .Include(r => r.Ratings)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            return recipe == null ? NotFound() : Ok(recipe);
         }
 
         [HttpPost]
@@ -41,7 +58,7 @@ namespace PrzepisyAPI.Controllers
             recipe.Preparation = r.Preparation;
             recipe.ImageUrl = r.ImageUrl;
             recipe.CookingTime = r.CookingTime;
-            recipe.AuthorId = r.AuthorId;
+            recipe.UserId = r.UserId;
             recipe.CreatedAt = r.CreatedAt;
             await _context.SaveChangesAsync();
             return NoContent();

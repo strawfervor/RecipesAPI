@@ -14,7 +14,14 @@ namespace PrzepisyAPI.Controllers
         private readonly RecipeDbContext _context;
         public CategoryController(RecipeDbContext context) => _context = context;
 
-        [HttpGet] public async Task<IEnumerable<Category>> Get() => await _context.Categories.ToListAsync();
+        [HttpGet]
+        public async Task<IEnumerable<Category>> Get()
+        {
+            return await _context.Categories
+                .Include(c => c.RecipeCategories)
+                    .ThenInclude(rc => rc.Recipe)
+                .ToListAsync();
+        }
 
         [HttpPost]
         public async Task<ActionResult<Category>> Post(Category c)

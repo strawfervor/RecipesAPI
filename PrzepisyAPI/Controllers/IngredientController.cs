@@ -14,7 +14,14 @@ namespace PrzepisyAPI.Controllers
         private readonly RecipeDbContext _context;
         public IngredientController(RecipeDbContext context) => _context = context;
 
-        [HttpGet] public async Task<IEnumerable<Ingredient>> Get() => await _context.Ingredients.ToListAsync();
+        [HttpGet]
+        public async Task<IEnumerable<Ingredient>> Get()
+        {
+            return await _context.Ingredients
+                .Include(i => i.RecipeIngredients)
+                    .ThenInclude(ri => ri.Recipe)
+                .ToListAsync();
+        }
 
         [HttpPost]
         public async Task<ActionResult<Ingredient>> Post(Ingredient i)
