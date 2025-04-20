@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
 using Scalar.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,8 +13,33 @@ builder.Services.AddDbContext<RecipeDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddControllers();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+//authentication/authorization stuff below:
+
+var jwtKey = builder.Configuration["Jwt:Key"];//token and issuer  is in appsettings.json
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))// exclamation mark to stop null warning
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+
+
 
 var app = builder.Build();
 
@@ -24,6 +52,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

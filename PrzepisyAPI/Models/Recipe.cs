@@ -8,7 +8,7 @@
         public string Preparation { get; set; } = "";
         public string? ImageUrl { get; set; }
         public string CookingTime { get; set; } = "";
-        public int UserId { get; set; }//pełni rolę autora
+        public int? UserId { get; set; }//old authorId
         public DateTime CreatedAt { get; set; }
 
         //relacje

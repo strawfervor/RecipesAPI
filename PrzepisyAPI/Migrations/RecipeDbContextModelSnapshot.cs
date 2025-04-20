@@ -55,6 +55,10 @@ namespace PrzepisyAPI.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RecipeId");
+
+                    b.HasIndex("UserId");
+
                     b.ToTable("Favorites");
                 });
 
@@ -101,6 +105,10 @@ namespace PrzepisyAPI.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RecipeId");
+
+                    b.HasIndex("UserId");
+
                     b.ToTable("Ratings");
                 });
 
@@ -111,9 +119,6 @@ namespace PrzepisyAPI.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AuthorId")
-                        .HasColumnType("int");
 
                     b.Property<string>("CookingTime")
                         .IsRequired()
@@ -137,7 +142,12 @@ namespace PrzepisyAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Recipes");
                 });
@@ -157,6 +167,10 @@ namespace PrzepisyAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("RecipeId");
 
                     b.ToTable("RecipeCategories");
                 });
@@ -179,6 +193,10 @@ namespace PrzepisyAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IngredientId");
+
+                    b.HasIndex("RecipeId");
 
                     b.ToTable("RecipeIngredients");
                 });
@@ -209,6 +227,121 @@ namespace PrzepisyAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.Favorite", b =>
+                {
+                    b.HasOne("PrzepisyAPI.Models.Recipe", "Recipe")
+                        .WithMany("Favorites")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrzepisyAPI.Models.User", "User")
+                        .WithMany("Favorites")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.Rating", b =>
+                {
+                    b.HasOne("PrzepisyAPI.Models.Recipe", "Recipe")
+                        .WithMany("Ratings")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrzepisyAPI.Models.User", "User")
+                        .WithMany("Ratings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.Recipe", b =>
+                {
+                    b.HasOne("PrzepisyAPI.Models.User", "User")
+                        .WithMany("Recipes")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.RecipeCategory", b =>
+                {
+                    b.HasOne("PrzepisyAPI.Models.Category", "Category")
+                        .WithMany("RecipeCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrzepisyAPI.Models.Recipe", "Recipe")
+                        .WithMany("RecipeCategories")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.RecipeIngredient", b =>
+                {
+                    b.HasOne("PrzepisyAPI.Models.Ingredient", "Ingredient")
+                        .WithMany("RecipeIngredients")
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrzepisyAPI.Models.Recipe", "Recipe")
+                        .WithMany("RecipeIngredients")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ingredient");
+
+                    b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.Category", b =>
+                {
+                    b.Navigation("RecipeCategories");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.Ingredient", b =>
+                {
+                    b.Navigation("RecipeIngredients");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.Recipe", b =>
+                {
+                    b.Navigation("Favorites");
+
+                    b.Navigation("Ratings");
+
+                    b.Navigation("RecipeCategories");
+
+                    b.Navigation("RecipeIngredients");
+                });
+
+            modelBuilder.Entity("PrzepisyAPI.Models.User", b =>
+                {
+                    b.Navigation("Favorites");
+
+                    b.Navigation("Ratings");
+
+                    b.Navigation("Recipes");
                 });
 #pragma warning restore 612, 618
         }
