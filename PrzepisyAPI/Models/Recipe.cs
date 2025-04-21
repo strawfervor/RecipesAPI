@@ -12,7 +12,7 @@
         public DateTime CreatedAt { get; set; }
 
         //relacje
-        public User User { get; set; } = new User();
+        public User User { get; set; }
         public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
         public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
         public ICollection<RecipeCategory> RecipeCategories { get; set; } = new List<RecipeCategory>();
