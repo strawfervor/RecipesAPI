@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
+using PrzepisyAPI.Dtos;
 using PrzepisyAPI.Models;
 using System.Security.Claims;
 
@@ -25,21 +26,24 @@ namespace PrzepisyAPI.Controllers
                 .ToListAsync();
         }
 
-        [HttpPost]
         [Authorize]
-        public async Task<ActionResult<Favorite>> Post(Favorite f)
+        [HttpPost("favorite")]
+        public async Task<IActionResult> ToggleFavorite([FromBody] FavoriteDto dto)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            var favorite = new Favorite
-            {
-                UserId = userId,
-                RecipeId = f.RecipeId
-            };
+            var existing = await _context.Favorites
+                .FirstOrDefaultAsync(f => f.RecipeId == dto.RecipeId && f.UserId == userId);
 
-            _context.Favorites.Add(favorite);
+            if (existing != null)
+                _context.Favorites.Remove(existing);
+            else
+                _context.Favorites.Add(new Favorite { RecipeId = dto.RecipeId, UserId = userId });
+
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(Get), new { id = favorite.Id }, favorite);
+            return Ok();
         }
+
+
     }
 }

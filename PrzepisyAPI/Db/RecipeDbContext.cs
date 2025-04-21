@@ -13,5 +13,20 @@ namespace PrzepisyAPI.Db
         public DbSet<RecipeCategory> RecipeCategories { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
         public DbSet<Rating> Ratings { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Recipe)
+                .WithMany(r => r.Ratings)
+                .HasForeignKey(r => r.RecipeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.Recipe)
+                .WithMany(r => r.Favorites)
+                .HasForeignKey(f => f.RecipeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
     }
 }

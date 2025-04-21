@@ -23,8 +23,8 @@ public class RecipeController : ControllerBase
     {
         return await _context.Recipes
             .Include(r => r.User)
-            .Include(r => r.RecipeIngredients)
-                .ThenInclude(ri => ri.Ingredient)
+            .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Ingredient)
+            .Include(r => r.RecipeCategories).ThenInclude(rc => rc.Category) // ✅ DODAJ TO
             .Include(r => r.Ratings)
             .Select(r => new RecipeDto
             {
@@ -38,6 +38,10 @@ public class RecipeController : ControllerBase
                 Ingredients = r.RecipeIngredients
                     .Where(ri => ri.Ingredient != null)
                     .Select(ri => ri.Ingredient!.Name)
+                    .ToList(),
+                Categories = r.RecipeCategories
+                    .Where(rc => rc.Category != null)
+                    .Select(rc => rc.Category!.Name)
                     .ToList(),
                 AverageRating = r.Ratings.Any() ? r.Ratings.Average(rt => rt.Score) : null
             })
@@ -77,14 +81,55 @@ public class RecipeController : ControllerBase
 
     [Authorize]
     [HttpPost]
-    public async Task<ActionResult<Recipe>> Post(Recipe recipe)
+    public async Task<ActionResult> Post([FromBody] RecipePostDto dto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        recipe.UserId = userId;
-        recipe.CreatedAt = DateTime.Now;
+
+        var recipe = new Recipe
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            Preparation = dto.Preparation,
+            CookingTime = dto.CookingTime,
+            ImageUrl = dto.ImageUrl,
+            CreatedAt = DateTime.Now,
+            UserId = userId,
+            RecipeCategories = new List<RecipeCategory>(),
+            RecipeIngredients = new List<RecipeIngredient>()
+        };
+
+        // Kategorie
+        foreach (var categoryDto in dto.RecipeCategories)
+        {
+            var category = await _context.Categories.FindAsync(categoryDto.CategoryId);
+            if (category != null)
+            {
+                recipe.RecipeCategories.Add(new RecipeCategory
+                {
+                    Category = category,
+                    Recipe = recipe
+                });
+            }
+        }
+
+        // Składniki
+        foreach (var ingDto in dto.RecipeIngredients)
+        {
+            var ingredient = await _context.Ingredients.FindAsync(ingDto.IngredientId);
+            if (ingredient != null)
+            {
+                recipe.RecipeIngredients.Add(new RecipeIngredient
+                {
+                    Ingredient = ingredient,
+                    Recipe = recipe,
+                    Quantity = ingDto.Quantity
+                });
+            }
+        }
 
         _context.Recipes.Add(recipe);
         await _context.SaveChangesAsync();
+
         return CreatedAtAction(nameof(Get), new { id = recipe.Id }, recipe);
     }
 

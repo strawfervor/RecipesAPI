@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
+using PrzepisyAPI.Dtos;
 using PrzepisyAPI.Models;
 using System.Security.Claims;
 
@@ -25,23 +26,30 @@ namespace PrzepisyAPI.Controllers
                 .ToListAsync();
         }
 
-        [HttpPost]
         [Authorize]
-        public async Task<ActionResult<Rating>> Post(Rating r)
+        [HttpPost("rating")]
+        public async Task<IActionResult> Rate([FromBody] RatingDto dto)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            var rating = new Rating
-            {
-                UserId = userId,
-                RecipeId = r.RecipeId,
-                Score = r.Score,
-                CreatedAt = DateTime.Now
-            };
+            var existing = await _context.Ratings
+                .FirstOrDefaultAsync(r => r.RecipeId == dto.RecipeId && r.UserId == userId);
 
-            _context.Ratings.Add(rating);
+            if (existing != null)
+                existing.Score = dto.Score;
+            else
+                _context.Ratings.Add(new Rating
+                {
+                    RecipeId = dto.RecipeId,
+                    UserId = userId,
+                    Score = dto.Score,
+                    CreatedAt = DateTime.Now
+                });
+
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(Get), new { id = rating.Id }, rating);
+            return Ok();
         }
+
     }
+
 }

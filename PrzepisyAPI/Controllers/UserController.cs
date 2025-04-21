@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
+using PrzepisyAPI.Dtos;
 using PrzepisyAPI.Models;
 using System;
 
@@ -25,15 +26,25 @@ namespace PrzepisyAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<ActionResult<UserProfileDto>> GetUser(int id)
         {
             var user = await _context.Users
                 .Include(u => u.Recipes)
                 .Include(u => u.Favorites)
-                .Include(u => u.Ratings)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
-            return user == null ? NotFound() : Ok(user);
+            if (user == null)
+                return NotFound();
+
+            var dto = new UserProfileDto
+            {
+                Username = user.Username,
+                Email = user.Email,
+                FavoritesCount = user.Favorites?.Count ?? 0,
+                RecipesCount = user.Recipes?.Count ?? 0
+            };
+
+            return Ok(dto);
         }
 
         [HttpPost]

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
+using PrzepisyAPI.Dtos;
 using PrzepisyAPI.Models;
 using System;
 
@@ -15,12 +16,18 @@ namespace PrzepisyAPI.Controllers
         public IngredientController(RecipeDbContext context) => _context = context;
 
         [HttpGet]
-        public async Task<IEnumerable<Ingredient>> Get()
+        public async Task<ActionResult<IEnumerable<IngredientDto>>> Get()
         {
-            return await _context.Ingredients
-                .Include(i => i.RecipeIngredients)
-                    .ThenInclude(ri => ri.Recipe)
+            var ingredients = await _context.Ingredients
+                .Select(i => new IngredientDto
+                {
+                    Id = i.Id,
+                    Name = i.Name,
+                    Unit = i.Unit
+                })
                 .ToListAsync();
+
+            return Ok(ingredients);
         }
 
         [HttpPost]
