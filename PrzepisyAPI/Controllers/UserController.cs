@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
@@ -15,7 +16,12 @@ namespace PrzepisyAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly RecipeDbContext _context;
-        public UserController(RecipeDbContext context) => _context = context;
+        private readonly IPasswordHasher<User> _passwordHasher;
+        public UserController(RecipeDbContext context, IPasswordHasher<User> passwordHasher)
+        {
+            _context = context;
+            _passwordHasher = passwordHasher;
+        }
 
         [HttpGet]
         public async Task<IEnumerable<User>> Get() 
@@ -118,6 +124,37 @@ namespace PrzepisyAPI.Controllers
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
         }
+
+        [Authorize]
+        [HttpPut("{id}/change-email")]
+        public async Task<IActionResult> ChangeEmail(int id, [FromBody] ChangeEmailDto dto)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            user.Email = dto.NewEmail;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+
+        [Authorize]
+        [HttpPut("{id}/change-password")]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDto dto)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
+            if (verificationResult == PasswordVerificationResult.Failed)
+                return BadRequest("Nieprawidłowe obecne hasło.");
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
     }
 
 }

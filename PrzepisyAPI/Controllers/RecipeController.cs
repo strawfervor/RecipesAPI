@@ -48,6 +48,39 @@ public class RecipeController : ControllerBase
             .ToListAsync();
     }
 
+    [HttpGet("{id}/edit")]
+    public async Task<ActionResult<RecipeEditDto>> GetForEdit(int id)
+    {
+        var recipe = await _context.Recipes
+            .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Ingredient)
+            .Include(r => r.RecipeCategories).ThenInclude(rc => rc.Category)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        if (recipe == null)
+            return NotFound();
+
+        return Ok(new RecipeEditDto
+        {
+            Id = recipe.Id,
+            Title = recipe.Title,
+            Description = recipe.Description,
+            Preparation = recipe.Preparation,
+            CookingTime = recipe.CookingTime,
+            ImageUrl = recipe.ImageUrl,
+            Ingredients = recipe.RecipeIngredients.Select(ri => new IngredientWithQuantityDto
+            {
+                Id = ri.Ingredient.Id,
+                Name = ri.Ingredient.Name,
+                Quantity = ri.Quantity
+            }).ToList(),
+            Categories = recipe.RecipeCategories.Select(rc => new IdNameDto
+            {
+                Id = rc.Category.Id,
+                Name = rc.Category.Name
+            }).ToList()
+        });
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<RecipeDto>> Get(int id)
     {
@@ -134,20 +167,45 @@ public class RecipeController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, Recipe r)
+    public async Task<IActionResult> Put(int id, [FromBody] RecipePostDto dto)
     {
-        var recipe = await _context.Recipes.FindAsync(id);
-        if (recipe == null) return NotFound();
-        recipe.Title = r.Title;
-        recipe.Description = r.Description;
-        recipe.Preparation = r.Preparation;
-        recipe.ImageUrl = r.ImageUrl;
-        recipe.CookingTime = r.CookingTime;
-        recipe.UserId = r.UserId;
-        recipe.CreatedAt = r.CreatedAt;
+        var recipe = await _context.Recipes
+            .Include(r => r.RecipeIngredients)
+            .Include(r => r.RecipeCategories)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        if (recipe == null)
+            return NotFound();
+
+        // Podstawowe pola
+        recipe.Title = dto.Title;
+        recipe.Description = dto.Description;
+        recipe.Preparation = dto.Preparation;
+        recipe.CookingTime = dto.CookingTime;
+        recipe.ImageUrl = dto.ImageUrl;
+
+        // Kategorie
+        recipe.RecipeCategories.Clear();
+        foreach (var cat in dto.RecipeCategories)
+        {
+            var category = await _context.Categories.FindAsync(cat.CategoryId);
+            if (category != null)
+                recipe.RecipeCategories.Add(new RecipeCategory { Category = category });
+        }
+
+        // Składniki
+        recipe.RecipeIngredients.Clear();
+        foreach (var ing in dto.RecipeIngredients)
+        {
+            var ingredient = await _context.Ingredients.FindAsync(ing.IngredientId);
+            if (ingredient != null)
+                recipe.RecipeIngredients.Add(new RecipeIngredient { Ingredient = ingredient, Quantity = ing.Quantity });
+        }
+
         await _context.SaveChangesAsync();
         return NoContent();
     }
+
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
