@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrzepisyAPI.Db;
@@ -23,12 +24,13 @@ namespace PrzepisyAPI.Controllers
                 .ToListAsync();
         }
 
+        [Authorize]
         [HttpPost]
-        public async Task<ActionResult<Category>> Post(Category c)
+        public async Task<ActionResult<Category>> Post([FromBody] Category category)
         {
-            _context.Categories.Add(c);
+            _context.Categories.Add(category);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(Get), new { id = c.Id }, c);
+            return CreatedAtAction(nameof(Get), new { id = category.Id }, category);
         }
     }
 

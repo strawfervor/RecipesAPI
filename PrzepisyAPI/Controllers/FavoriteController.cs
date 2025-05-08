@@ -35,13 +35,20 @@ namespace PrzepisyAPI.Controllers
             var existing = await _context.Favorites
                 .FirstOrDefaultAsync(f => f.RecipeId == dto.RecipeId && f.UserId == userId);
 
+            bool added;
             if (existing != null)
+            {
                 _context.Favorites.Remove(existing);
+                added = false;
+            }
             else
+            {
                 _context.Favorites.Add(new Favorite { RecipeId = dto.RecipeId, UserId = userId });
+                added = true;
+            }
 
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { added });//zwracanie jsona "i tak", żeby nie buło pustych sytuacji i błędów nie dobrych :c
         }
 
 

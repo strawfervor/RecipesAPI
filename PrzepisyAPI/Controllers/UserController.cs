@@ -83,17 +83,15 @@ namespace PrzepisyAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize] // Wymaga autoryzacji (ważne!)
+        [Authorize]
         public async Task<IActionResult> DeleteRecipe(int id)
         {
-            // Pobierz ID zalogowanego użytkownika z tokena JWT
-            // Nazwa claimu może się różnić w zależności od konfiguracji uwierzytelniania
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) // Standardowy claim dla ID
-                           ?? User.FindFirstValue("sub"); // Czasem używany w JWT
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                           ?? User.FindFirstValue("sub");
 
             if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
             {
-                return Unauthorized("Nie można zidentyfikować użytkownika."); // Lub BadRequest
+                return Unauthorized("nie można (z)autoryzować użytkownika.");
             }
 
             var recipe = await _context.Recipes.FindAsync(id);
@@ -103,17 +101,14 @@ namespace PrzepisyAPI.Controllers
                 return NotFound($"Przepis o ID {id} nie został znaleziony.");
             }
 
-            // Sprawdź, czy zalogowany użytkownik jest właścicielem przepisu
             if (recipe.UserId != userId)
             {
-                // Użytkownik próbuje usunąć nie swój przepis
-                return Forbid("Nie masz uprawnień do usunięcia tego przepisu."); // Status 403
+                return Forbid("nie możesz ususnąć tego przepisu");
             }
 
             _context.Recipes.Remove(recipe);
             await _context.SaveChangesAsync();
 
-            // Zwróć 204 No Content - standardowa odpowiedź dla udanego DELETE bez treści
             return NoContent();
         }
 
@@ -147,7 +142,7 @@ namespace PrzepisyAPI.Controllers
 
             var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
             if (verificationResult == PasswordVerificationResult.Failed)
-                return BadRequest("Nieprawidłowe obecne hasło.");
+                return BadRequest("Błędne hasło!");
 
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
             await _context.SaveChangesAsync();
